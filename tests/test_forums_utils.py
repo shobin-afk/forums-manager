@@ -27,6 +27,26 @@ def test_dedup_by_url_normalizes_and_keeps_first():
     assert [i["title"] for i in out] == ["a", "c"]
 
 
+def test_dedup_by_url_keeps_distinct_query_params():
+    items = [
+        {"url": "https://example.com/showthread.php?t=101", "title": "a"},
+        {"url": "https://example.com/showthread.php?t=202", "title": "b"},
+        {"url": "https://example.com/showthread.php?t=101", "title": "c"},
+    ]
+    out = fu.dedup_by_url(items)
+    assert [i["title"] for i in out] == ["a", "b"]
+
+
+def test_dedup_by_url_skips_items_missing_url():
+    items = [
+        {"title": "no-url"},
+        {"url": "https://example.com/thread/1", "title": "a"},
+        {"url": "", "title": "empty-url"},
+    ]
+    out = fu.dedup_by_url(items)
+    assert [i["title"] for i in out] == ["a"]
+
+
 # Task 3: Date parsing and recency label
 def test_parse_relative_date_absolute():
     assert fu.parse_relative_date("posted Jan 5, 2026", date(2026, 7, 2)) == date(2026, 1, 5)
@@ -38,6 +58,14 @@ def test_parse_relative_date_relative():
 
 def test_parse_relative_date_none():
     assert fu.parse_relative_date("no date here", date(2026, 7, 2)) is None
+
+
+def test_parse_relative_date_invalid_absolute_date_returns_none():
+    assert fu.parse_relative_date("bumped Feb 30, 2026", date(2026, 7, 2)) is None
+
+
+def test_parse_relative_date_valid_absolute_still_works():
+    assert fu.parse_relative_date("Jan 5, 2026", date(2026, 7, 2)) == date(2026, 1, 5)
 
 
 def test_recency_label_buckets():

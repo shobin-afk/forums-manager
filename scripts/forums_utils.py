@@ -1,6 +1,6 @@
 """Pure stdlib helpers for the forums-manager skill."""
 import re
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta
 from urllib.parse import urlsplit
 
 
@@ -27,18 +27,22 @@ def same_domain(url, domain):
 
 # Task 2: URL dedup
 def _normalize_url(url):
-    """Normalize URL for dedup: ignore scheme, lowercase domain and path, strip trailing slash."""
+    """Normalize URL for dedup: ignore scheme, lowercase domain, path, and keep query string."""
     parts = urlsplit(url)
     path = parts.path.rstrip("/")
-    return "%s%s" % (domain_of(url), path.lower())
+    q = "?" + parts.query if parts.query else ""
+    return "%s%s%s" % (domain_of(url), path.lower(), q)
 
 
 def dedup_by_url(items):
-    """Dedup items by normalized URL, keeping first occurrence."""
+    """Dedup items by normalized URL, keeping first occurrence. Skips items without a url."""
     seen = set()
     out = []
     for item in items:
-        key = _normalize_url(item["url"])
+        url = item.get("url")
+        if not url:
+            continue
+        key = _normalize_url(url)
         if key in seen:
             continue
         seen.add(key)
@@ -61,7 +65,10 @@ def parse_relative_date(text, today):
     if m:
         mon = _MONTHS.get(m.group(1)[:3].lower())
         if mon:
-            return date(int(m.group(3)), mon, int(m.group(2)))
+            try:
+                return date(int(m.group(3)), mon, int(m.group(2)))
+            except ValueError:
+                pass
     m = _REL_RE.search(text)
     if m:
         n = int(m.group(1))
