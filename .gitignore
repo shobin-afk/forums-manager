@@ -1,0 +1,4 @@
+output/forums-manager/*.md
+__pycache__/
+*.pyc
+.superpowers/
